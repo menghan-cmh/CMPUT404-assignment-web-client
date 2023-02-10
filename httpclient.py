@@ -49,7 +49,6 @@ class HTTPClient(object):
         return data[0]
 
     def get_body(self, data):
-        # print(data)
         data = data.split("\r\n\r\n")
         
         return data[1]
@@ -72,8 +71,6 @@ class HTTPClient(object):
                 buffer.extend(part)
             else:
                 done = not part
-        print("!!!!!!", count)
-        print(buffer.decode('utf-8'))
         return buffer.decode('utf-8')
     
 
@@ -94,44 +91,35 @@ class HTTPClient(object):
     
 
     def send_request(self, request):
-        # print("Request: ", request)
         self.connect(self.host, self.port)
         self.sendall(request)
-        
         buffer = self.recvall(self.socket)
-        # print("\nBuffer: ", buffer)
         self.close()
         return buffer
 
 
     def GET(self, url, args=None):
         self.parse_url(url)
-        # print(self.host, self.port)
         request = f"GET {self.path} HTTP/1.1\r\nHost: {self.host}\r\nConnection: close\r\n\r\n"
         buffer = self.send_request(request)
         code = self.get_code(buffer)
         body = self.get_body(buffer)
-        # print(code, body)
         return HTTPResponse(code, body)
 
 
     def POST(self, url, args=None):
         self.parse_url(url)
-        # print(self.host, self.port)
         length = 0
-        # print("before: ", args)
         if args == None:
             argsP = ""
         else:
             argsP = urllib.parse.urlencode(args)
             length = len(argsP)
-        # print("\nafter: ", args)
         request = f"POST {self.path} HTTP/1.1\r\nHost: {self.host}\r\nContent-Length: {length}\r\nContent-Type: application/x-www-form-urlencoded\r\nConnection: close\r\n\r\n"
         request += argsP
         buffer = self.send_request(request)
         code = self.get_code(buffer)
         body = self.get_body(buffer)
-        # print(code, body)
         return HTTPResponse(code, body)
 
     def command(self, url, command="GET", args=None):
