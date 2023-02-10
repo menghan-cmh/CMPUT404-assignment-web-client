@@ -63,23 +63,62 @@ class HTTPClient(object):
         buffer = bytearray()
         done = False
         while not done:
+            print("try")
             part = sock.recv(1024)
             if (part):
                 buffer.extend(part)
             else:
                 done = not part
         return buffer.decode('utf-8')
+    
+
+    def parse_url(self, url):
+        url = urllib.parse.urlparse(url)
+
+        self.host = url.hostname
+
+        self.path = url.path
+        if url.path == '':
+            self.path = '/'
+
+        if url.port == None:
+            self.port = 80
+        else:
+            self.port = url.port
+        return None
+    
+
+    def send_request(self, request):
+        print(request)
+        self.connect(self.host, self.port)
+        self.sendall(request)
+        
+        buffer = self.recvall(self.socket)
+        self.close()
+        return buffer
+
 
     def GET(self, url, args=None):
-        url = urllib.parse.urlparse(url)
-        code = 500
-        body = ""
+        self.parse_url(url)
+        # print(self.host, self.port)
+        request = f"GET {self.path} HTTP/1.1\r\nHost: {self.host}\r\n\r\n"
+        buffer = self.send_request(request)
+        code = self.get_code(buffer)
+        body = self.get_body(buffer)
+        # print(code, body)
         return HTTPResponse(code, body)
 
+
     def POST(self, url, args=None):
-        url = urllib.parse.urlparse(url)
-        code = 500
-        body = ""
+        self.parse_url(url)
+        # print(self.host, self.port)
+        if args == None:
+            self.args = ""
+        request = f"POST {self.path} HTTP/1.1\r\nHost: {self.host}\r\nContent-Length: {len(self.args)}\r\nContent-Type: application/x-www-form-urlencoded\r\nConnection:close\r\n\r\n{self.args}\r\n"
+        buffer = self.send_request(request)
+        code = self.get_code(buffer)
+        body = self.get_body(buffer)
+        # print(code, body)
         return HTTPResponse(code, body)
 
     def command(self, url, command="GET", args=None):
