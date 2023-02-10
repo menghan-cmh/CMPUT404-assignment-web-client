@@ -63,7 +63,6 @@ class HTTPClient(object):
         buffer = bytearray()
         done = False
         while not done:
-            print("try")
             part = sock.recv(1024)
             if (part):
                 buffer.extend(part)
@@ -89,11 +88,12 @@ class HTTPClient(object):
     
 
     def send_request(self, request):
-        print(request)
+        # print("Request: ", request)
         self.connect(self.host, self.port)
         self.sendall(request)
         
         buffer = self.recvall(self.socket)
+        print("\nBuffer: ", buffer)
         self.close()
         return buffer
 
@@ -101,7 +101,7 @@ class HTTPClient(object):
     def GET(self, url, args=None):
         self.parse_url(url)
         # print(self.host, self.port)
-        request = f"GET {self.path} HTTP/1.1\r\nHost: {self.host}\r\n\r\n"
+        request = f"GET {self.path} HTTP/1.1\r\nHost: {self.host}\r\nConnection: close\r\n\r\n"
         buffer = self.send_request(request)
         code = self.get_code(buffer)
         body = self.get_body(buffer)
@@ -112,9 +112,15 @@ class HTTPClient(object):
     def POST(self, url, args=None):
         self.parse_url(url)
         # print(self.host, self.port)
+        length = 0
+        # print("before: ", args)
         if args == None:
-            self.args = ""
-        request = f"POST {self.path} HTTP/1.1\r\nHost: {self.host}\r\nContent-Length: {len(self.args)}\r\nContent-Type: application/x-www-form-urlencoded\r\nConnection:close\r\n\r\n{self.args}\r\n"
+            args = ""
+        else:
+            length = len(args)
+            args = urllib.parse.urlencode(args)
+        # print("\nafter: ", args)
+        request = f"POST {self.path} HTTP/1.1\r\nHost: {self.host}\r\nContent-Length: {length}\r\nContent-Type: application/x-www-form-urlencoded\r\nConnection: close\r\n\r\n{args}\r\n"
         buffer = self.send_request(request)
         code = self.get_code(buffer)
         body = self.get_body(buffer)
